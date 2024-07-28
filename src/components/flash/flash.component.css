@@ -1,0 +1,26 @@
+.flash-text {
+    opacity: 0;
+    display: inline-block;
+    position: fixed;
+    transition: transform 2s, opacity 2s;
+    z-index: 99;
+}
+
+.flash-text.animate {
+    animation: scaleAndFade 2s forwards;
+}
+
+@keyframes scaleAndFade {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.1;
+        transform: scale(50);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(100);
+    }
+}

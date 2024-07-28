@@ -21,6 +21,7 @@ let connection: Mongoose | undefined;
 
 export async function ensureConnected() {
     if (!connection) {
-        await connect('mongodb://127.0.0.1:27017/action-items');
+        const connString = process.env['MONGO_CONN_STRING'] || 'mongodb://127.0.0.1:27017/action-items';
+        await connect(connString);
     }
 }
