@@ -1,0 +1,30 @@
+.post-it-list {
+    list-style: none;
+    padding: 0;
+}
+
+.post-it-item {
+    background: #ffeb3b;
+    padding: 16px;
+    margin: 8px;
+    width: 200px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    font-family: Arial, sans-serif;
+    color: #333;
+}
+
+.post-it-header {
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-bottom: 8px;
+}
+
+.post-it-description {
+    font-size: 0.9em;
+    line-height: 1.4;
+    max-height: 4.2em; /* 3 lines of text */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
