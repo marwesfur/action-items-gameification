@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import {getUser} from "@/lib/auth/auth.service";
 import {Providers} from "@/app/providers";
-import Header from "@/components/header/header.component";
+import Frame from "@/components/frame/frame.component";
 
 export const metadata: Metadata = {
   title: "SM Champions",
@@ -18,10 +18,11 @@ export default function RootLayout({
     <html suppressHydrationWarning lang="en">
       <body>
         <Providers>
-            <Header user={getUser()} />
-            <div className="m-6" >
-                {children}
-            </div>
+            <Frame user={getUser()}>
+                <div className="m-6">
+                    {children}
+                </div>
+            </Frame>
         </Providers>
       </body>
     </html>

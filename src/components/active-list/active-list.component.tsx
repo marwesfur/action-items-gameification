@@ -11,6 +11,7 @@ import {useRouter} from 'next/navigation'
 import {Modal, ModalBody, ModalContent, ModalFooter, ModalHeader} from "@nextui-org/modal";
 import {Input, Textarea} from "@nextui-org/input";
 import Flash from "@/components/flash/flash.component";
+import {useRetroMode} from "@/lib/contexts/retro-mode.context";
 
 export default function ActiveList(props: { user: string, initialActiveActionItems: ActionItem[] }) {
     const [actionItems, setActionItems] = useState(props.initialActiveActionItems);
@@ -108,6 +109,7 @@ export default function ActiveList(props: { user: string, initialActiveActionIte
 }
 
 function ItemCard({ item, user, onDelete, onFinish, onClaim, flash }: { item: ActionItem, user: string, flash: boolean, onDelete: () => void, onClaim: () => void, onFinish: () => void }) {
+    const isRetroModeActive = useRetroMode();
     const ownCount = getOwnAchievementsCount();
     const bestOtherCount = getAchievementsOfBestOtherCount();
     const hasAchievements = item.achievements.length > 0;
@@ -130,11 +132,12 @@ function ItemCard({ item, user, onDelete, onFinish, onClaim, flash }: { item: Ac
             <Divider/>
             <CardFooter>
                 <div className="grow flex items-center justify-between flex-wrap gap-2">
-                    <Button onClick={onClaim} className="bg-gradient-to-tl from-fuchsia-800 via-purple-800 to-cyan-700 text-white shadow-lg">I totally did it</Button>
                     {
-                        hasAchievements
-                            ? (<Button variant="faded" onClick={onFinish}>Finish</Button>)
-                            : (<Button color="danger" onClick={onDelete}>Delete</Button>)
+                        !isRetroModeActive
+                            ? (<Button onClick={onClaim} className="bg-gradient-to-tl from-fuchsia-800 via-purple-800 to-cyan-700 text-white shadow-lg">I totally did it</Button>)
+                            : hasAchievements
+                                ? (<Button variant="faded" onClick={onFinish}>Issue awards</Button>)
+                                : (<Button color="danger" onClick={onDelete}>Delete</Button>)
                     }
                 </div>
             </CardFooter>
