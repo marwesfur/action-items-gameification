@@ -1,7 +1,7 @@
-import {createActionItem} from "@/lib/domain/action-items.service";
 import {Input, Textarea} from "@nextui-org/input";
 import {Button} from "@nextui-org/button";
 import { redirect } from 'next/navigation';
+import {createActionItem} from "@/lib/server-actions/create-action-item.action";
 
 export default function NewActionItemPage() {
 
@@ -12,7 +12,7 @@ export default function NewActionItemPage() {
         const description = formData.get('description')  as string;
 
         if (title?.trim() && description?.trim()) {
-            await createActionItem({title, description});
+            await createActionItem(title, description);
             redirect('/');
         }
     }

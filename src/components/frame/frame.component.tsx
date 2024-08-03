@@ -6,8 +6,11 @@ import Link from "next/link";
 import {useState} from "react";
 import {Switch} from "@nextui-org/switch";
 import {RetroModeProvider} from "@/lib/contexts/retro-mode.context";
+import {Avatar} from "@nextui-org/avatar";
+import {Tooltip} from "@nextui-org/tooltip";
+import {LoggedInUser} from "@/lib/auth/auth.model";
 
-export default function Frame({ user, children }: { user: string, children: React.ReactNode }) {
+export default function Frame({ user, children }: { user: LoggedInUser, children: React.ReactNode }) {
     const [isRetroModeActive, setRetroModeActive] = useState(false);
     const pathName = usePathname();
     const isInListView = pathName === '/';
@@ -45,7 +48,11 @@ export default function Frame({ user, children }: { user: string, children: Reac
                 }
                 <NavbarContent justify="end">
                     <NavbarItem>
-                        Welcome, {user}!
+                        <Tooltip content={`Welcome, ${user.name}!`} showArrow={true}>
+                            <Link href={isRetroModeActive ? '' :  '/profile'}>
+                                <Avatar name={user.name} src={user.avatarUrl} />
+                            </Link>
+                        </Tooltip>
                     </NavbarItem>
                 </NavbarContent>
             </Navbar>

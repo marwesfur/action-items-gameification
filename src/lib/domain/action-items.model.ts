@@ -1,32 +1,19 @@
-export interface Achievement {
-    by: string;
+import {User} from "@/lib/domain/user.model";
+import {Types} from "mongoose";
+
+export interface Achievement<TUser extends User | Types.ObjectId> {
+    by: TUser;
     at: string;
     proof?: string;
 }
 
-export interface ActionItem {
-    id: string;
+export interface ActionItem<TUser extends User | Types.ObjectId> {
+    _id: Types.ObjectId;
     title: string;
     description: string;
+    achievements: Achievement<TUser>[];
+
+    createdBy: TUser;
     startedAt: string;
     archived: boolean;
-
-    achievements: Achievement[];
-}
-
-export interface ActionItemResult {
-    id: string;
-    title: string;
-    description: string;
-    startedAt: string;
-
-    firstPlace: PlaceInfo | undefined;
-    secondPlace: PlaceInfo | undefined;
-    thirdPlace: PlaceInfo | undefined;
-    honorableMentions: PlaceInfo[];
-}
-
-export interface PlaceInfo {
-    count: number;
-    users: string[];
 }

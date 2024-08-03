@@ -1,36 +1,50 @@
 'use server';
 
-import {Achievement, ActionItem, ActionItemResult} from "./action-items.model";
+import {Achievement, ActionItem} from "./action-items.model";
 import {ActionItemModel, ensureConnected} from "@/lib/storage/mongo.service";
-import {getUser} from "@/lib/auth/auth.service";
-import {HydratedDocument} from "mongoose";
-import {groupBy, mapValues, orderBy, toPairs} from "lodash-es";
+import {Types} from "mongoose";
+import {User} from "@/lib/domain/user.model";
 
 export interface CreateActionItemRequest {
+    userId: string;
     title: string;
     description: string;
 }
 
-export async function createActionItem(request: CreateActionItemRequest): Promise<ActionItem> {
+export async function createActionItem(request: CreateActionItemRequest): Promise<ActionItem<User>> {
     await ensureConnected();
 
-    const actionItem: Omit<ActionItem, 'id'> = {
-        ...request,
-        archived: false,
+    const actionItem: Omit<ActionItem<Types.ObjectId>, '_id'> = {
+        title: request.title,
+        description: request.description,
+        achievements: [],
+        createdBy: new Types.ObjectId(request.userId),
         startedAt: new Date().toISOString(),
-        achievements: []
+        archived: false
     };
     const model = new ActionItemModel(actionItem);
     await model.save();
+    await model.populate();
 
-    return toActionItem(model);
+    return model;
 }
 
-export async function getActiveActionItems(): Promise<ActionItem[]> {
+export async function getActionItem(id: string): Promise<ActionItem<User>> {
     await ensureConnected();
-    const items = await ActionItemModel.find({'archived': false}).exec();
 
-    return items.map(toActionItem);
+    const actionItem = await ActionItemModel.findById(id).exec();
+    await actionItem.populate(['createdBy', 'achievements.by']);
+
+    return actionItem;
+}
+
+export async function getActiveActionItems(): Promise<ActionItem<User>[]> {
+    await ensureConnected();
+
+    return await ActionItemModel
+        .find({ archived: false })
+        .populate(['createdBy', 'achievements.by'])
+        .exec();
 }
 
 export async function deleteActionItem(actionItemId: string): Promise<void> {
@@ -38,70 +52,35 @@ export async function deleteActionItem(actionItemId: string): Promise<void> {
     await ActionItemModel.findByIdAndDelete(actionItemId).exec();
 }
 
-export interface ClaimAchievementRequest {
+export interface AddAchievementRequest {
+    userId: string;
     actionItemId: string;
     proof: string;
 }
 
-export async function claimAchievement(request: ClaimAchievementRequest): Promise<ActionItem> {
+export async function addAchievement(request: AddAchievementRequest): Promise<ActionItem<User>> {
     await ensureConnected();
-    const user = getUser();
-    const newAchievement: Achievement = {
-        by: user,
+    const newAchievement: Achievement<Types.ObjectId> = {
+        by: new Types.ObjectId(request.userId),
         at: new Date().toISOString(),
         proof: request.proof
     };
-    const updatedModel = await ActionItemModel.findByIdAndUpdate(request.actionItemId,
-        { $push: { achievements: newAchievement } },
-        { new: true }
-        ).exec();
 
-    return toActionItem(updatedModel);
-}
-
-export async function getActionItemResult(actionItemId: string): Promise<ActionItemResult> {
-    await ensureConnected();
-    const model = await ActionItemModel.findById(actionItemId) as HydratedDocument<ActionItem>;
-    const achievementCountsByUser = mapValues(groupBy(model.achievements, a => a.by), as => as.length);
-    const countsWithUsers = toPairs(
-            mapValues(
-                groupBy(toPairs(achievementCountsByUser), ([, count]) => count),
-                usersWithCount => usersWithCount.map(([user]) => user)))
-            .map(([count, users]) => ({ count: parseInt(count), users })); // parseInt since grouping by count made it a key and therefore a string
-    const descCountsWithUsers = orderBy(countsWithUsers, 'count', 'desc');
-
-    return {
-        id: model._id.toString(),
-        title: model.title,
-        description: model.description,
-        startedAt: model.startedAt,
-
-        firstPlace: descCountsWithUsers[0],
-        secondPlace: descCountsWithUsers[1],
-        thirdPlace: descCountsWithUsers[2],
-        honorableMentions: descCountsWithUsers.slice(3),
-    };
+    return await ActionItemModel
+        .findByIdAndUpdate(request.actionItemId,
+            {$push: {achievements: newAchievement}},
+            {new: true}
+        )
+        .populate(['createdBy', 'achievements.by'])
+        .exec();
 }
 
 export async function archiveActionItem(actionItemId: string): Promise<void> {
     await ensureConnected();
-    const updatedModel = await ActionItemModel.findByIdAndUpdate(actionItemId,
-        { $set: { archived: true } },
-        { new: true }
-    ).exec();
-}
-
-function toActionItem(model: HydratedDocument<ActionItem>): ActionItem {
-    return {
-        id: model._id.toString(),
-        title: model.title,
-        description: model.description,
-        startedAt: model.startedAt,
-        archived: model.archived,
-        achievements: model.achievements.map(achievement => ({
-            by: achievement.by,
-            at: achievement.at,
-            proof: achievement.proof
-        }))
-    };
+    await ActionItemModel
+        .findByIdAndUpdate(actionItemId,
+            {$set: {archived: true}},
+            {new: true}
+        )
+        .exec();
 }

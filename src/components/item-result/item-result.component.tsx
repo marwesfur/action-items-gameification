@@ -1,21 +1,21 @@
 "use client"
 
-import {ActionItemResult} from "@/lib/domain/action-items.model";
 import {Button} from "@nextui-org/button";
-import {useState} from "react";
 import {Card, CardBody, CardHeader} from "@nextui-org/card";
 import {Divider} from "@nextui-org/divider";
 import {archiveActionItem} from "@/lib/domain/action-items.service";
 import {useRouter} from 'next/navigation';
 import Confetti from "react-confetti";
+import {ActionItemResult, PlaceInfo} from "@/lib/server-actions/get-action-item-result.action";
+import {Tooltip} from "@nextui-org/tooltip";
+import {Avatar} from "@nextui-org/avatar";
+import useDeviceSize from "@/utils/use-device-size";
 
-export function ItemResult({ result, allUsers }: { result: ActionItemResult, allUsers: string[] }) {
-    const [isRevealed, setIsRevealed] = useState(false);
+type User = PlaceInfo['users'][0];
+
+export function ItemResult({ result }: { result: ActionItemResult }) {
     const router = useRouter();
-
-    function onReveal() {
-        setIsRevealed(true);
-    }
+    const [width, height] = useDeviceSize();
 
     async function onArchive() {
         await archiveActionItem(result.id);
@@ -24,40 +24,44 @@ export function ItemResult({ result, allUsers }: { result: ActionItemResult, all
 
     return (
         <div>
-            {result.title} <br />
-            {result.description} <br />
+            <Card>
+                <CardHeader>
+                    <b>{result.title}</b>
+                </CardHeader>
+                <Divider />
+                <CardBody>
+                    {result.description}
+                </CardBody>
+            </Card>
 
-            The following colleagues contributed to this item: {allUsers.join(', ')}
-
-            {
-                isRevealed
-                    ? (<AwardCeremony result={result} onArchive={onArchive} />)
-                    : (<div><Button className="mt-2" onPress={onReveal}>Reveal</Button></div>)
-            }
-        </div>
-    );
-}
-
-function AwardCeremony({ result, onArchive }: { result: ActionItemResult, onArchive: () => void }) {
-    return (
-        <div className="gap-8 grid grid-cols-12 m-10">
             <Confetti
-                width={window.innerWidth}
-                height={window.innerHeight}
+                width={width}
+                height={height}
                 numberOfPieces={500}
-                recycle={false}
             />
 
-            <Podium which="first" awarded={!!result.firstPlace} users={result.firstPlace?.users} count={result.firstPlace?.count} />
-            <Podium which="second" awarded={!!result.secondPlace} users={result.secondPlace?.users} count={result.secondPlace?.count} />
-            <Podium which="third" awarded={!!result.thirdPlace} users={result.thirdPlace?.users} count={result.thirdPlace?.count} />
+            <div className="flex justify-center">
+                <div className="gap-8 grid grid-cols-12 m-20 items-end">
+                    <Podium which="second" awarded={!!result.secondPlace} users={result.secondPlace?.users}
+                            count={result.secondPlace?.count}/>
+                    <Podium which="first" awarded={!!result.firstPlace} users={result.firstPlace?.users}
+                            count={result.firstPlace?.count}/>
+                    <Podium which="third" awarded={!!result.thirdPlace} users={result.thirdPlace?.users}
+                            count={result.thirdPlace?.count}/>
+                </div>
+            </div>
 
             <Button onClick={onArchive}>Archive</Button>
         </div>
     );
 }
 
-function Podium( { which, awarded, users, count } : { which: 'first' | 'second' | 'third', awarded: boolean, users?: string[], count?: number }) {
+function Podium({which, awarded, users, count}: {
+    which: 'first' | 'second' | 'third',
+    awarded: boolean,
+    users?: User[],
+    count?: number
+}) {
     const bgs = {
         'first': 'from-amber-400 via-amber-500 to-amber-500',
         'second': 'from-gray-400 via-gray-400 to-gray-500',
@@ -68,19 +72,29 @@ function Podium( { which, awarded, users, count } : { which: 'first' | 'second' 
         'second': 'Second place',
         'third': 'Third place'
     }
+    const heights = {
+        'first': '300px',
+        'second': '200px',
+        'third': '100px'
+    }
 
     return (
-        <Card className={'col-span-4 w-full bg-gradient-to-tl ' + bgs[which]  + (!awarded ? ' opacity-40' : '')}>
-            <CardHeader>
-                <b>{names[which]}: {awarded ? `${count} Points` : 'Not awarded'}</b>
-            </CardHeader>
-            <Divider/>
-            <CardBody>
+        <div className="col-span-4 flex flex-col items-center gap-2" style={ {maxWidth: '300px'} }>
+            <div className="flex gap-4 flex-wrap-reverse justify-center mx-4">
                 {
-                    (users ?? []).map(user => (<p>{user}</p>))
+                    (users ?? []).map(user => (
+                        <Tooltip content={user.name} key={user.id}>
+                            <Avatar name={user.name} src={user.avatarUrl} size="lg" />
+                        </Tooltip>
+                    ))
                 }
-            </CardBody>
-            <Divider/>
-        </Card>
+            </div>
+            <Card className={'w-full bg-gradient-to-tl ' + bgs[which]  + (!awarded ? ' opacity-40' : '')} style={ {height: heights[which] } }>
+                <CardBody className="text-center">
+                    <b>{names[which]}: {awarded ? `${count} Points` : 'Not awarded'}</b>
+                </CardBody>
+                <Divider/>
+            </Card>
+        </div>
     );
 }
