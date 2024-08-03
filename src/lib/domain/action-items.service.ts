@@ -2,9 +2,9 @@
 
 import {Achievement, ActionItem, ActionItemResult} from "./action-items.model";
 import {ActionItemModel, ensureConnected} from "@/lib/storage/mongo.service";
-import {getUser} from "@/lib/auth/auth.service";
 import {HydratedDocument} from "mongoose";
 import {groupBy, mapValues, orderBy, toPairs} from "lodash-es";
+import {LoggedInUser} from "@/lib/auth/auth.model";
 
 export interface CreateActionItemRequest {
     title: string;
@@ -39,13 +39,14 @@ export async function deleteActionItem(actionItemId: string): Promise<void> {
 }
 
 export interface ClaimAchievementRequest {
+    user: LoggedInUser;
     actionItemId: string;
     proof: string;
 }
 
 export async function claimAchievement(request: ClaimAchievementRequest): Promise<ActionItem> {
     await ensureConnected();
-    const user = getUser();
+    const user = request.user.userName;
     const newAchievement: Achievement = {
         by: user,
         at: new Date().toISOString(),

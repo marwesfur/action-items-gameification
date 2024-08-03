@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import {ActionItem} from "@/lib/domain/action-items.model";
-import {claimAchievement, deleteActionItem} from "@/lib/domain/action-items.service";
+import {deleteActionItem} from "@/lib/domain/action-items.service";
 import {groupBy, toPairs} from 'lodash-es';
 import {Card, CardBody, CardFooter, CardHeader} from "@nextui-org/card";
 import {Divider} from "@nextui-org/divider";
@@ -12,6 +12,7 @@ import {Modal, ModalBody, ModalContent, ModalFooter, ModalHeader} from "@nextui-
 import {Input, Textarea} from "@nextui-org/input";
 import Flash from "@/components/flash/flash.component";
 import {useRetroMode} from "@/lib/contexts/retro-mode.context";
+import {claimAchievement} from "@/lib/server-actions/claim-achievement.action";
 
 export default function ActiveList(props: { user: string, initialActiveActionItems: ActionItem[] }) {
     const [actionItems, setActionItems] = useState(props.initialActiveActionItems);
@@ -36,7 +37,7 @@ export default function ActiveList(props: { user: string, initialActiveActionIte
     }
 
     async function onFinishClaimItem() {
-        const updatedItem = await claimAchievement({ actionItemId: claimingItem!.id, proof });
+        const updatedItem = await claimAchievement(claimingItem!.id, proof);
         setActionItems(old => old.map(o => o.id !== claimingItem!.id ? o : updatedItem));
         setClaimingItem(null);
         setJustClaimedItem(updatedItem);

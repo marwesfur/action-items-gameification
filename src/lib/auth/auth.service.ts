@@ -1,19 +1,52 @@
-import { headers } from 'next/headers'
-import {NextRequest} from "next/server";
+"use server"
 
-export function getUser(): string {
-    const credentials = extractCredentials(headers());
-    return credentials === 'notFound' ? '' : credentials.user;
-}
+import {Credentials} from "@/lib/auth/auth.model";
+import {config} from "@/lib/config/config";
+import {createUser, getUser, tryGetUserByUserName} from "@/lib/domain/user.service";
+import {User} from "@/lib/domain/user.model";
+import * as jose from 'jose'
+import {getLoggedInUserOrFail} from "@/lib/auth/client-auth.service";
+import {cookies} from "next/headers";
 
+const secret = new TextEncoder().encode(config.jwtSecret);
 
-
-export function extractCredentials(headers: Headers): { user: string; pass: string } | 'notFound' {
-    const authHeader = headers.get('authorization') || headers.get('Authorization');
-    if (!authHeader) {
-        return 'notFound';
+/**
+ * Transparent registration: If the username does not yet exist, we create a new user on the fly.
+ * Deliberately no password check atm -- who wants to remember/manage yet another password?!
+ */
+export async function login(credentials: Credentials): Promise<void> {
+    let user = await tryGetUserByUserName(credentials.user);
+    if (!user) {
+        user = await createUser({ userName: credentials.user });
     }
 
-    const [user, pass] = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-    return user && pass ? { user, pass } : 'notFound';
+    const payload = userToPayload(user);
+    const token = await new jose.SignJWT(payload)
+        .setProtectedHeader({alg: 'HS256'})
+        .setIssuedAt()
+        .sign(secret);
+
+    cookies().set('SMAuth', token);
+}
+
+export async function refreshLogin(): Promise<void> {
+    const loggedInUser = await getLoggedInUserOrFail();
+    const user = await getUser(loggedInUser.id);
+    const payload = userToPayload(user);
+    const token = await new jose.SignJWT(payload)
+        .setProtectedHeader({alg: 'HS256'})
+        .setIssuedAt()
+        .sign(secret);
+
+    cookies().set('SMAuth', token);
+}
+
+function userToPayload(user: User): jose.JWTPayload {
+    return {
+        sub: user.id,
+        userName: user.userName,
+        name: user.name,
+        roles: JSON.stringify(user.roles),
+        avatarUrl: user.avatarUrl
+    };
 }

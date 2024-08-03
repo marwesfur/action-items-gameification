@@ -1,13 +1,14 @@
-import {getActiveActionItems} from "@/lib/domain/action-items.service";
-import {getUser} from "@/lib/auth/auth.service";
 import ActiveList from "@/components/active-list/active-list.component";
+import {getLoggedInUserOrFail} from "@/lib/auth/client-auth.service";
+import {getActiveActionItems} from "@/lib/domain/action-items.service";
 
 export default async function ActionItemsPage() {
-  const activeActionItems = await getActiveActionItems();
+    const user = await getLoggedInUserOrFail();
+    const activeActionItems = await getActiveActionItems();
 
   return (
       <main>
-        <ActiveList initialActiveActionItems={activeActionItems} user={getUser()} />
+        <ActiveList initialActiveActionItems={activeActionItems} user={user.userName} />
       </main>
   );
 }

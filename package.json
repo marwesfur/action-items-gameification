@@ -11,6 +11,7 @@
   "dependencies": {
     "@nextui-org/react": "^2.4.6",
     "framer-motion": "^11.3.19",
+    "jose": "^5.6.3",
     "lodash-es": "^4.17.21",
     "mongoose": "^8.5.1",
     "next": "14.2.5",
